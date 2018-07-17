@@ -225,6 +225,44 @@ class Network(Escpos):
             self.device.shutdown(socket.SHUT_RDWR)
             self.device.close()
 
+class Bluetooth(Escpos):
+    """
+
+    :param host:    Printer's MAC Address
+    :param port:    Port to write to
+    :param timeout: timeout in seconds for the socket-library
+    """
+    def __init__(self, host, port, timeout=60, *args, **kwargs):
+        Escpos.__init__(self, *args, **kwargs)
+        self.host = host
+        self.port = port
+        self.timeout = timeout
+        self.open()
+
+    """ Connect bluetooth socket with ``socket``-library and set it as escpos device """
+    def open(self):
+        if self.device is not None and self.device.is_open:
+            self.close()
+        self.device = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+        self.device.connect((self.host, self.port))
+
+        if self.device is None:
+            print("Could not open socket for {0}".format(self.host))
+
+    def _raw(self, msg):
+        """ Print any command sent in raw format
+
+        :param msg: arbitrary code to be printed
+        :type msg: bytes
+        """
+        self.device.sendall(msg)
+
+    def close(self):
+        """ Release and Close bluetooth connection """
+        if self.device is not None:
+            self.device.close()
+            self.device = None
+
 
 class File(Escpos):
     """ Generic file printer
